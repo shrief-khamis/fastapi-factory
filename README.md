@@ -4,7 +4,7 @@ Catalogue of API templates and building blocks to spin up FastAPI projects quick
 
 ## TODO
 
-- [ ] Sandbox: async I/O API (quick responses, async endpoints)
+- [x] Sandbox: async I/O API (quick responses, async endpoints)
 - [ ] Sandbox: Celery job API (enqueue → job ID → poll or webhook)
 - [ ] Extract shared code into `foundation/`, template-specific into `templates/`
 - [ ] Implement generator script (`scripts/new_project.py`) + module registry
