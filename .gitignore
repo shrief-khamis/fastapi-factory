@@ -55,6 +55,9 @@ logs/
 # Jupyter
 .ipynb_checkpoints/
 
+# Generator output (default example path)
+out/
+
 # Misc
 *.bak
 *.tmp
