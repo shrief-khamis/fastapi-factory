@@ -1,11 +1,11 @@
-# Shared dev / runner deps for templates (extend per sandbox if needed)
+# Shared dev / runner deps for templates (extend per template if needed)
 fastapi>=0.115.0
 uvicorn[standard]>=0.32.0
 pydantic>=2.0.0
 pytest>=8.0.0
 pytest-asyncio>=0.24.0
 httpx>=0.27.0
-# Celery job API sandbox
+# Celery job API template
 celery[redis]>=5.4.0
 redis>=5.0.0
 python-dotenv>=1.0.0

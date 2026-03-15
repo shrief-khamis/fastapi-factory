@@ -1,4 +1,4 @@
-# Celery Job API (sandbox)
+# Celery Job API (template)
 
 Submit work as jobs; get a job ID, check status, and fetch the result. Uses Celery + Redis.
 
@@ -16,13 +16,13 @@ Submit work as jobs; get a job ID, check status, and fetch the result. Uses Cele
 
 2. **Install deps** (from repo root with venv active):
    ```bash
-   pip install -r sandbox/celery_job_api/requirements.txt
+   pip install -r templates/celery_job_api/requirements.txt
    ```
    Or use the global repo `requirements.txt` if it includes celery/redis.
 
 3. **Copy env and run API:**
    ```bash
-   cd sandbox/celery_job_api
+   cd templates/celery_job_api
    cp .env.example .env
    uvicorn main:app --reload
    ```
@@ -30,7 +30,7 @@ Submit work as jobs; get a job ID, check status, and fetch the result. Uses Cele
 
 4. **Run a Celery worker** (separate terminal, same venv and cwd):
    ```bash
-   cd sandbox/celery_job_api
+   cd templates/celery_job_api
    celery -A core.celery_app worker -l info
    ```
 
@@ -41,7 +41,7 @@ Submit work as jobs; get a job ID, check status, and fetch the result. Uses Cele
 
 ## Tests
 
-From `sandbox/celery_job_api` (venv active):
+From `templates/celery_job_api` (venv active):
 
 ```bash
 pytest -v

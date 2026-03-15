@@ -4,12 +4,12 @@ Catalogue of API templates and building blocks to spin up FastAPI projects quick
 
 ## TODO
 
-- [x] Sandbox: async I/O API (quick responses, async endpoints)
-- [x] Sandbox: Celery job API (enqueue → job ID → poll or webhook)
-- [ ] Extract shared code into `foundation/`, template-specific into `templates/`
-- [ ] Implement generator script (`scripts/new_project.py`) + module registry
-- [ ] Test generator with async I/O template
-- [ ] Add optional modules (rate limit, api_key_auth, idempotency, webhook_sender, job_status_store)
+- [x] Template: async I/O API (quick responses, async endpoints)
+- [x] Template: Celery job API (enqueue → job ID → poll or webhook)
+- [ ] Create generator script; copy template to target path and rename
+- [ ] Test generator on base templates (async_io_api, celery_job_api)
+- [ ] Add modules patcher + wire generator to run chosen modules on generated project
+- [ ] Optional modules (rate limit, api_key_auth, idempotency, webhook_sender, job_status_store)
 
 ## Usage (later)
 
