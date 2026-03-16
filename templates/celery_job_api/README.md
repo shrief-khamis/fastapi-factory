@@ -2,49 +2,54 @@
 
 Submit work as jobs; get a job ID, check status, and fetch the result. Uses Celery + Redis.
 
-## Install on your machine (no Docker)
+## Run with Docker (recommended)
 
-- **Redis:**  
-  - macOS: `brew install redis` then `brew services start redis`  
-  - Linux (Debian/Ubuntu): `sudo apt install redis-server` then `sudo systemctl start redis-server`  
-  - Check: `redis-cli ping` → `PONG`
-- **Celery:** No system install. Use the same Python venv as the API; `pip install -r requirements.txt` (or from repo root) installs `celery` and `redis`.
+From the generated project directory (this template copied there):
 
-## Run
+```bash
+cp .env.example .env
+docker compose up --build
+```
 
-1. **Start Redis** (if not already running), e.g. `brew services start redis` or `redis-server`.
+Services:
 
-2. **Install deps** (from repo root with venv active):
-   ```bash
-   pip install -r templates/celery_job_api/requirements.txt
-   ```
-   Or use the global repo `requirements.txt` if it includes celery/redis.
+- `redis` on port `6379`
+- `api` on port `8000`
+- `worker` running the Celery worker
 
-3. **Copy env and run API:**
-   ```bash
-   cd templates/celery_job_api
-   cp .env.example .env
-   uvicorn main:app --reload
-   ```
-   The API will exit on startup if Redis is not reachable.
+The API will be available at `http://localhost:8000`.
 
-4. **Run a Celery worker** (separate terminal, same venv and cwd):
-   ```bash
-   cd templates/celery_job_api
-   celery -A core.celery_app worker -l info
-   ```
+## Local development (without Docker)
 
-5. **Test:**  
-   - `POST /submit-job` with body `{"data": "hello"}` → returns `job_id`.  
-   - `GET /job-status/<id>` → status (404 if unknown id).  
-   - `GET /job-results/<id>` → result when ready (202 while pending, 404 if unknown id).
+From the project root, with a virtualenv active:
+
+```bash
+pip install -r requirements.txt
+cp .env.example .env
+cd src
+uvicorn main:app --reload
+```
+
+Run a Celery worker in a separate terminal (with Redis running, e.g. via Docker or locally):
+
+```bash
+cd src
+celery -A core.celery_app worker -l info
+```
 
 ## Tests
 
-From `templates/celery_job_api` (venv active):
+From the project root (venv active):
 
 ```bash
+cd src
 pytest -v
 ```
 
 Requires Redis running (lifespan pings Redis on startup).
+
+## Endpoints
+
+- `POST /submit-job` → enqueue work, returns `job_id`
+- `GET /job-status/{job_id}` → job status (404 if unknown id)
+- `GET /job-results/{job_id}` → job result when ready (202 while pending, 404 if unknown id)
