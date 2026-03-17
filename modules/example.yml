@@ -1,0 +1,93 @@
+name: webhook_sender
+description: Adds webhook delivery support for async jobs
+version: "0.1.0"
+
+compatible_templates:
+  - celery_job_api
+  - celery_same_request
+
+requires_modules: []
+conflicts_with: []
+
+variables:
+  webhook_route_prefix: "/webhooks"
+  delivery_queue_name: "webhook_delivery"
+
+dependencies:
+  python_packages:
+    - httpx>=0.27
+  system_packages: []
+  env_vars:
+    - name: WEBHOOK_TIMEOUT_SECONDS
+      value: "10"
+    - name: WEBHOOK_MAX_RETRIES
+      value: "5"
+  docker_services: []
+  docker_compose_fragments: []
+
+copy_files:
+  - source: files/app/api/webhooks.py
+    destination: app/api/webhooks.py
+  - source: files/app/models/webhook_delivery.py
+    destination: app/models/webhook_delivery.py
+  - source: files/app/tasks/webhook_tasks.py
+    destination: app/tasks/webhook_tasks.py
+  - source: files/tests/test_webhook_api.py
+    destination: tests/test_webhook_api.py
+
+create_dirs:
+  - app/services
+  - app/tasks
+
+patches:
+  - target: app/main.py
+    strategy: marker_insert
+    marker: "# MODULE_IMPORTS"
+    position: after
+    content_from: patches/main_imports.txt
+
+  - target: app/main.py
+    strategy: marker_insert
+    marker: "# MODULE_ROUTERS"
+    position: after
+    content_from: patches/main_routers.txt
+
+  - target: app/core/config.py
+    strategy: marker_insert
+    marker: "# MODULE_SETTINGS"
+    position: after
+    content_from: patches/config_settings.txt
+
+  - target: requirements.txt
+    strategy: append_lines
+    lines:
+      - httpx>=0.27
+
+  - target: docker-compose.yml
+    strategy: merge_yaml
+    content_from: patches/docker-compose.fragment.yml
+
+tests:
+  copy:
+    - source: files/tests/test_webhook_api.py
+      destination: tests/test_webhook_api.py
+  commands:
+    - pytest tests/test_webhook_api.py
+
+scripts:
+  copy:
+    - source: files/scripts/replay_webhooks.py
+      destination: scripts/replay_webhooks.py
+
+post_generation:
+  commands:
+    - echo "Remember to wire webhook task into Celery task registry"
+  notes:
+    - "Set WEBHOOK_TIMEOUT_SECONDS in .env"
+    - "Run tests after generation"
+
+seed_data: []
+
+migrations:
+  engine: alembic
+  files: []

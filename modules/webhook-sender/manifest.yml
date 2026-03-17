@@ -1,0 +1,12 @@
+name: webhook_sender
+description: Send job results or notifications to a user-provided webhook URL.
+
+compatible_templates:
+  - celery_job_api
+
+requires_modules: []
+conflicts_with: []
+
+dependencies:
+  python_packages:
+    - httpx>=0.27.0
