@@ -9,8 +9,9 @@ Catalogue of API templates and building blocks to spin up FastAPI projects quick
 - [x] Create generator script; copy template to target path and rename
 - [x] Test generator on base templates (async_io_api, celery_job_api)
 - [x] Add Dockerfile and docker-compose for templates; move code under src/
-- [ ] Add modules patcher + wire generator to run chosen modules on generated project
-- [ ] Optional modules (rate limit, api_key_auth, idempotency, webhook_sender, job_status_store)
+- [x] Add a webhook receiver template
+- [x] Add modules patcher + wire generator to run chosen modules on generated project
+- [x] Add first optional module, webhook sender
 
 ## Usage (later)
 
