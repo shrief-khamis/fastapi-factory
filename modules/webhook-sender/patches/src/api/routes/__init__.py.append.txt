@@ -1,0 +1,8 @@
+
+# webhook_sender module
+try:
+    from api.routes.webhook_routes import router as webhook_router  # type: ignore
+
+    router.include_router(webhook_router)
+except ImportError:
+    pass

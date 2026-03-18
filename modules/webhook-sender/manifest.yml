@@ -10,3 +10,24 @@ conflicts_with: []
 dependencies:
   python_packages:
     - httpx>=0.27.0
+  env_vars:
+    - name: WEBHOOK_TIMEOUT_SECONDS
+      value: "10"
+    - name: WEBHOOK_MAX_RETRIES
+      value: "5"
+
+copy_files:
+  - source: files/src/api/models/webhook_models.py
+    destination: src/api/models/webhook_models.py
+  - source: files/src/api/routes/webhook_routes.py
+    destination: src/api/routes/webhook_routes.py
+  - source: files/src/core/tasks/webhook_tasks.py
+    destination: src/core/tasks/webhook_tasks.py
+
+append_files:
+  - target: src/api/models/__init__.py
+    content_from: patches/src/api/models/__init__.py.append.txt
+  - target: src/api/routes/__init__.py
+    content_from: patches/src/api/routes/__init__.py.append.txt
+  - target: src/core/tasks/__init__.py
+    content_from: patches/src/core/tasks/__init__.py.append.txt
