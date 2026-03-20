@@ -15,7 +15,7 @@ def modules_dir() -> Path:
 
 
 def _discover_modules() -> dict[str, tuple[Path, dict]]:
-    """Return dict mapping manifest['name'] -> (module_dir, manifest_dict)."""
+    """Return dict mapping manifest['name'] -> (module_dir, manifest_dict) for public modules only."""
     result = {}
     base = modules_dir()
     if not base.is_dir():
@@ -28,7 +28,7 @@ def _discover_modules() -> dict[str, tuple[Path, dict]]:
             continue
         with open(manifest_path) as f:
             data = yaml.safe_load(f)
-        if data and "name" in data:
+        if data and "name" in data and data.get("public", False):
             result[data["name"]] = (entry, data)
     return result
 

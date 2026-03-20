@@ -1,5 +1,6 @@
 name: webhook_sender
 description: Send job results or notifications to a user-provided webhook URL.
+public: true
 
 compatible_templates:
   - celery_job_api
