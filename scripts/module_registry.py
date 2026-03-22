@@ -204,6 +204,20 @@ def copy_module_files(project_path: Path, module_names: list[str]) -> None:
             shutil.copy2(src, dst)
 
 
+def deep_merge_dicts(base: dict, overlay: dict) -> dict:
+    """
+    Recursively merge ``overlay`` into ``base``. Dict values are merged; scalars and
+    lists are replaced by ``overlay``. Used for docker-compose and other YAML merges.
+    """
+    result = dict(base)
+    for key, value in overlay.items():
+        if key in result and isinstance(result[key], dict) and isinstance(value, dict):
+            result[key] = deep_merge_dicts(result[key], value)
+        else:
+            result[key] = value
+    return result
+
+
 def insert_text_after_marker_line(content: str, marker: str, block: str) -> str | None:
     """
     Insert ``block`` immediately after the first line that contains ``marker``.
@@ -235,17 +249,70 @@ def insert_text_after_marker_line(content: str, marker: str, block: str) -> str 
     return result
 
 
-def apply_marker_insert_patches(project_path: Path, module_names: list[str]) -> None:
-    """
-    Apply marker-based inserts: after the first line containing ``marker`` in ``target``,
-    insert the text from ``source`` (path relative to the module directory).
+def _apply_yml_merge(
+    project_path: Path,
+    module_dir: Path,
+    item: dict,
+) -> None:
+    """Merge YAML fragment from ``source`` into ``target`` (relative to project path)."""
+    target_rel = item.get("target")
+    source_rel = item.get("source")
+    if not target_rel or not source_rel:
+        return
+    fragment_path = module_dir / source_rel
+    if not fragment_path.is_file():
+        return
+    raw_fragment = _read_text(fragment_path)
+    if not raw_fragment.strip():
+        return
+    overlay = yaml.safe_load(raw_fragment)
+    if overlay is None:
+        overlay = {}
+    if not isinstance(overlay, dict):
+        return
 
-    Manifest shape per entry::
+    target_path = project_path / target_rel
+    if target_path.is_file():
+        raw_base = _read_text(target_path)
+        base = yaml.safe_load(raw_base) if raw_base.strip() else {}
+    else:
+        base = {}
+    if base is None:
+        base = {}
+    if not isinstance(base, dict):
+        return
+
+    merged = deep_merge_dicts(base, overlay)
+    dumped = yaml.safe_dump(
+        merged,
+        default_flow_style=False,
+        sort_keys=False,
+        allow_unicode=True,
+    )
+    if not dumped.endswith("\n"):
+        dumped += "\n"
+    target_path.parent.mkdir(parents=True, exist_ok=True)
+    target_path.write_text(dumped)
+
+
+def apply_patches(project_path: Path, module_names: list[str]) -> None:
+    """
+    Apply manifest ``patches`` entries. Each entry should set ``strategy``:
+
+    - ``marker_insert`` (default): after the first line containing ``marker`` in
+      ``target``, insert text from ``source`` (path relative to the module directory).
+    - ``yml_merge``: deep-merge YAML from ``source`` into ``target`` (e.g. docker-compose.yml).
+
+    Example::
 
         patches:
-          - target: Dockerfile
+          - strategy: marker_insert
+            target: Dockerfile
             marker: "# MODULE: extra-copies"
             source: patches/dockerfile_extra_copy.txt
+          - strategy: yml_merge
+            target: docker-compose.yml
+            source: patches/docker-compose.fragment.yml
     """
     for name in module_names:
         out = load_manifest(name)
@@ -253,10 +320,23 @@ def apply_marker_insert_patches(project_path: Path, module_names: list[str]) -> 
             continue
         module_dir, manifest = out
         for item in manifest.get("patches") or []:
+            if not isinstance(item, dict):
+                continue
+            strategy = item.get("strategy") or "marker_insert"
             target_rel = item.get("target")
-            marker = item.get("marker")
             source_rel = item.get("source")
-            if not target_rel or not marker or not source_rel:
+            if not target_rel or not source_rel:
+                continue
+
+            if strategy == "yml_merge":
+                _apply_yml_merge(project_path, module_dir, item)
+                continue
+
+            if strategy != "marker_insert":
+                continue
+
+            marker = item.get("marker")
+            if not marker:
                 continue
             patch_path = module_dir / source_rel
             block = _read_text(patch_path)
@@ -301,7 +381,7 @@ def apply_modules(project_path: Path, template: str, module_names: list[str]) ->
         return
     create_dirs(project_path, module_names)
     copy_module_files(project_path, module_names)
-    apply_marker_insert_patches(project_path, module_names)
+    apply_patches(project_path, module_names)
     apply_append_patches(project_path, module_names)
     append_requirements(project_path, module_names)
     append_env_vars(project_path, module_names)

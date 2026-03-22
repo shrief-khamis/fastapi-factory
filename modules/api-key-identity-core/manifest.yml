@@ -60,6 +60,10 @@ copy_files:
     destination: alembic/versions/0001_initial.py
 
 patches:
-  - target: Dockerfile
+  - strategy: marker_insert
+    target: Dockerfile
     marker: "# MODULE: extra-copies"
     source: patches/dockerfile_extra_copy.txt
+  - strategy: yml_merge
+    target: docker-compose.yml
+    source: patches/docker-compose.fragment.yml
