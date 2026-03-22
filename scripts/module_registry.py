@@ -204,6 +204,74 @@ def copy_module_files(project_path: Path, module_names: list[str]) -> None:
             shutil.copy2(src, dst)
 
 
+def insert_text_after_marker_line(content: str, marker: str, block: str) -> str | None:
+    """
+    Insert ``block`` immediately after the first line that contains ``marker``.
+
+    Returns the new file content, or None if ``marker`` does not appear in any line.
+    Idempotent: if ``block`` stripped is already a substring of ``content``, returns
+    ``content`` unchanged.
+    """
+    if not marker:
+        return None
+    block_stripped = block.strip()
+    if block_stripped and block_stripped in content:
+        return content
+
+    lines = content.split("\n")
+    marker_idx: int | None = None
+    for i, line in enumerate(lines):
+        if marker in line:
+            marker_idx = i
+            break
+    if marker_idx is None:
+        return None
+
+    block_lines = block.rstrip("\n").split("\n") if block.strip() else []
+    new_lines = lines[: marker_idx + 1] + block_lines + lines[marker_idx + 1 :]
+    result = "\n".join(new_lines)
+    if content.endswith("\n") and not result.endswith("\n"):
+        result += "\n"
+    return result
+
+
+def apply_marker_insert_patches(project_path: Path, module_names: list[str]) -> None:
+    """
+    Apply marker-based inserts: after the first line containing ``marker`` in ``target``,
+    insert the text from ``source`` (path relative to the module directory).
+
+    Manifest shape per entry::
+
+        patches:
+          - target: Dockerfile
+            marker: "# MODULE: extra-copies"
+            source: patches/dockerfile_extra_copy.txt
+    """
+    for name in module_names:
+        out = load_manifest(name)
+        if not out:
+            continue
+        module_dir, manifest = out
+        for item in manifest.get("patches") or []:
+            target_rel = item.get("target")
+            marker = item.get("marker")
+            source_rel = item.get("source")
+            if not target_rel or not marker or not source_rel:
+                continue
+            patch_path = module_dir / source_rel
+            block = _read_text(patch_path)
+            if not block.strip():
+                continue
+            target_path = project_path / target_rel
+            if not target_path.is_file():
+                continue
+            existing = _read_text(target_path)
+            new_content = insert_text_after_marker_line(existing, marker, block)
+            if new_content is None or new_content == existing:
+                continue
+            target_path.write_text(new_content)
+
+
 def apply_append_patches(project_path: Path, module_names: list[str]) -> None:
     """Apply append-only patches defined in manifest (content_from or lines)."""
     for name in module_names:
@@ -233,6 +301,7 @@ def apply_modules(project_path: Path, template: str, module_names: list[str]) ->
         return
     create_dirs(project_path, module_names)
     copy_module_files(project_path, module_names)
+    apply_marker_insert_patches(project_path, module_names)
     apply_append_patches(project_path, module_names)
     append_requirements(project_path, module_names)
     append_env_vars(project_path, module_names)
