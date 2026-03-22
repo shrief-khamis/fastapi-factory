@@ -1,5 +1,5 @@
 # Generator scripts (module_registry parses YAML)
-PyYAML>=6.0.0
+ruamel.yaml>=0.18.0
 
 # Shared dev / runner deps for templates (extend per template if needed)
 fastapi>=0.115.0

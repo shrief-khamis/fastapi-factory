@@ -1,9 +1,12 @@
 """Load module manifests, check compatibility, and apply module actions to a generated project."""
 
 import shutil
+from io import StringIO
 from pathlib import Path
+from typing import Any
 
-import yaml
+from ruamel.yaml import YAML
+from ruamel.yaml.comments import CommentedMap
 
 
 def repo_root() -> Path:
@@ -12,6 +15,27 @@ def repo_root() -> Path:
 
 def modules_dir() -> Path:
     return repo_root() / "modules"
+
+
+def _to_plain_mapping(obj: object) -> Any:
+    """Recursively convert CommentedMap / lists to plain Python structures."""
+    if isinstance(obj, dict):
+        return {k: _to_plain_mapping(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_to_plain_mapping(x) for x in obj]
+    return obj
+
+
+def _load_manifest_file(path: Path) -> dict | None:
+    """Load a module manifest.yml with ruamel (safe); return plain dict or None."""
+    with open(path, encoding="utf-8") as f:
+        data = YAML(typ="safe").load(f)
+    if data is None:
+        return None
+    plain = _to_plain_mapping(data)
+    if not isinstance(plain, dict):
+        return None
+    return plain
 
 
 def _discover_modules() -> dict[str, tuple[Path, dict]]:
@@ -26,8 +50,7 @@ def _discover_modules() -> dict[str, tuple[Path, dict]]:
         manifest_path = entry / "manifest.yml"
         if not manifest_path.is_file():
             continue
-        with open(manifest_path) as f:
-            data = yaml.safe_load(f)
+        data = _load_manifest_file(manifest_path)
         if data and "name" in data and data.get("public", False):
             result[data["name"]] = (entry, data)
     return result
@@ -204,6 +227,73 @@ def copy_module_files(project_path: Path, module_names: list[str]) -> None:
             shutil.copy2(src, dst)
 
 
+# Logical order for docker-compose services (deps before dependents); unknown names follow.
+_DOCKER_COMPOSE_SERVICE_ORDER: list[str] = [
+    "db",
+    "migrate",
+    "redis",
+    "api",
+    "worker",
+]
+
+
+def _compose_yaml() -> YAML:
+    """Ruamel YAML instance tuned for docker-compose style output."""
+    y = YAML(typ="rt")
+    y.indent(mapping=2, sequence=4, offset=2)
+    y.preserve_quotes = True
+    y.width = 4096
+    return y
+
+
+def _yaml_load_roundtrip(raw: str) -> dict:
+    """Load YAML into plain dicts/lists (no comments preserved)."""
+    if not raw.strip():
+        return {}
+    y = _compose_yaml()
+    data = y.load(StringIO(raw))
+    if data is None:
+        return {}
+    return _to_plain_mapping(data)
+
+
+def _ordered_services_commented(services: dict) -> CommentedMap:
+    """Build services mapping in dependency order with a blank line before each key after the first."""
+    cm = CommentedMap()
+    seen: set[str] = set()
+    ordered_names: list[str] = []
+    for name in _DOCKER_COMPOSE_SERVICE_ORDER:
+        if name in services:
+            ordered_names.append(name)
+            seen.add(name)
+    for name in services:
+        if name not in seen:
+            ordered_names.append(name)
+    for i, name in enumerate(ordered_names):
+        cm[name] = services[name]
+        if i > 0:
+            cm.yaml_set_comment_before_after_key(name, before="\n")
+    return cm
+
+
+def _ordered_compose_document(merged: dict) -> CommentedMap:
+    """
+    Top-level key order: services (ordered inner), other keys except volumes (sorted),
+    volumes last. Blank line before volumes when other sections exist.
+    """
+    out = CommentedMap()
+    if "services" in merged and isinstance(merged["services"], dict):
+        out["services"] = _ordered_services_commented(merged["services"])
+    other_keys = sorted(k for k in merged if k not in ("services", "volumes"))
+    for key in other_keys:
+        out[key] = merged[key]
+    if "volumes" in merged:
+        if len(out) > 0:
+            out.yaml_set_comment_before_after_key("volumes", before="\n")
+        out["volumes"] = merged["volumes"]
+    return out
+
+
 def deep_merge_dicts(base: dict, overlay: dict) -> dict:
     """
     Recursively merge ``overlay`` into ``base``. Dict values are merged; scalars and
@@ -265,30 +355,24 @@ def _apply_yml_merge(
     raw_fragment = _read_text(fragment_path)
     if not raw_fragment.strip():
         return
-    overlay = yaml.safe_load(raw_fragment)
-    if overlay is None:
-        overlay = {}
+    overlay = _yaml_load_roundtrip(raw_fragment)
     if not isinstance(overlay, dict):
         return
 
     target_path = project_path / target_rel
     if target_path.is_file():
         raw_base = _read_text(target_path)
-        base = yaml.safe_load(raw_base) if raw_base.strip() else {}
+        base = _yaml_load_roundtrip(raw_base) if raw_base.strip() else {}
     else:
-        base = {}
-    if base is None:
         base = {}
     if not isinstance(base, dict):
         return
 
     merged = deep_merge_dicts(base, overlay)
-    dumped = yaml.safe_dump(
-        merged,
-        default_flow_style=False,
-        sort_keys=False,
-        allow_unicode=True,
-    )
+    ordered = _ordered_compose_document(merged)
+    buf = StringIO()
+    _compose_yaml().dump(ordered, buf)
+    dumped = buf.getvalue()
     if not dumped.endswith("\n"):
         dumped += "\n"
     target_path.parent.mkdir(parents=True, exist_ok=True)
