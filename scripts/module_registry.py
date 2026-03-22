@@ -167,6 +167,23 @@ def append_env_vars(project_path: Path, module_names: list[str]) -> None:
         existing_lines = _read_text(env_example).splitlines()
 
 
+def create_dirs(project_path: Path, module_names: list[str]) -> None:
+    """Create directories declared by each module's manifest.
+    """
+    for name in module_names:
+        out = load_manifest(name)
+        if not out:
+            continue
+        _, manifest = out
+        dirs = manifest.get("create_dirs") or []
+        for item in dirs:
+            if not item:
+                continue
+            dir_path = project_path / str(item)
+            dir_path.mkdir(parents=True, exist_ok=True)
+
+
+
 def copy_module_files(project_path: Path, module_names: list[str]) -> None:
     """Copy module files into the generated project (skip if destination exists)."""
     for name in module_names:
@@ -214,6 +231,7 @@ def apply_modules(project_path: Path, template: str, module_names: list[str]) ->
     """
     if not module_names:
         return
+    create_dirs(project_path, module_names)
     copy_module_files(project_path, module_names)
     apply_append_patches(project_path, module_names)
     append_requirements(project_path, module_names)
