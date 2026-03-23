@@ -381,15 +381,20 @@ def _apply_yml_merge(
 
 def apply_patches(project_path: Path, module_names: list[str]) -> None:
     """
-    Apply manifest ``patches`` entries. Each entry should set ``strategy``:
+    Apply manifest ``patches`` entries. Each entry should set ``strategy``,
+    ``target``, and ``source``. Possible strategies are:
 
-    - ``marker_insert`` (default): after the first line containing ``marker`` in
-      ``target``, insert text from ``source`` (path relative to the module directory).
+    - ``file_append``: append text from ``source`` to ``target`` if missing.
+    - ``marker_insert``: after the first line containing ``marker`` in ``target``,
+      insert text from ``source`` (path relative to the module directory).
     - ``yml_merge``: deep-merge YAML from ``source`` into ``target`` (e.g. docker-compose.yml).
 
     Example::
 
         patches:
+          - strategy: file_append
+            target: src/api/routes/__init__.py
+            source: patches/src/api/routes/__init__.py.append.txt
           - strategy: marker_insert
             target: Dockerfile
             marker: "# MODULE: extra-copies"
@@ -406,9 +411,11 @@ def apply_patches(project_path: Path, module_names: list[str]) -> None:
         for item in manifest.get("patches") or []:
             if not isinstance(item, dict):
                 continue
-            strategy = item.get("strategy") or "marker_insert"
+            strategy = item.get("strategy")
             target_rel = item.get("target")
             source_rel = item.get("source")
+            if strategy not in {"file_append", "marker_insert", "yml_merge"}:
+                continue
             if not target_rel or not source_rel:
                 continue
 
@@ -416,17 +423,20 @@ def apply_patches(project_path: Path, module_names: list[str]) -> None:
                 _apply_yml_merge(project_path, module_dir, item)
                 continue
 
-            if strategy != "marker_insert":
+            patch_path = module_dir / source_rel
+            block = _read_text(patch_path)
+            if not block.strip():
+                continue
+
+            target_path = project_path / target_rel
+
+            if strategy == "file_append":
+                _append_text_if_missing(target_path, block)
                 continue
 
             marker = item.get("marker")
             if not marker:
                 continue
-            patch_path = module_dir / source_rel
-            block = _read_text(patch_path)
-            if not block.strip():
-                continue
-            target_path = project_path / target_rel
             if not target_path.is_file():
                 continue
             existing = _read_text(target_path)
@@ -434,26 +444,6 @@ def apply_patches(project_path: Path, module_names: list[str]) -> None:
             if new_content is None or new_content == existing:
                 continue
             target_path.write_text(new_content)
-
-
-def apply_append_patches(project_path: Path, module_names: list[str]) -> None:
-    """Apply append-only patches defined in manifest (content_from or lines)."""
-    for name in module_names:
-        out = load_manifest(name)
-        if not out:
-            continue
-        module_dir, manifest = out
-        for item in manifest.get("append_files") or []:
-            target_rel = item.get("target")
-            if not target_rel:
-                continue
-            target = project_path / target_rel
-            if "content_from" in item and item["content_from"]:
-                patch_path = module_dir / item["content_from"]
-                block = _read_text(patch_path)
-                _append_text_if_missing(target, block)
-            elif "lines" in item and item["lines"]:
-                _append_lines_unique(target, list(item["lines"]))
 
 
 def apply_modules(project_path: Path, template: str, module_names: list[str]) -> None:
@@ -466,7 +456,6 @@ def apply_modules(project_path: Path, template: str, module_names: list[str]) ->
     create_dirs(project_path, module_names)
     copy_module_files(project_path, module_names)
     apply_patches(project_path, module_names)
-    apply_append_patches(project_path, module_names)
     append_requirements(project_path, module_names)
     append_env_vars(project_path, module_names)
     print(f"Applied modules: {', '.join(module_names)}")

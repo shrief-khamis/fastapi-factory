@@ -25,10 +25,13 @@ copy_files:
   - source: files/src/core/tasks/webhook_tasks.py
     destination: src/core/tasks/webhook_tasks.py
 
-append_files:
-  - target: src/api/models/__init__.py
-    content_from: patches/src/api/models/__init__.py.append.txt
-  - target: src/api/routes/__init__.py
-    content_from: patches/src/api/routes/__init__.py.append.txt
-  - target: src/core/tasks/__init__.py
-    content_from: patches/src/core/tasks/__init__.py.append.txt
+patches:
+  - strategy: file_append
+    target: src/api/models/__init__.py
+    source: patches/src/api/models/__init__.py.append.txt
+  - strategy: file_append
+    target: src/api/routes/__init__.py
+    source: patches/src/api/routes/__init__.py.append.txt
+  - strategy: file_append
+    target: src/core/tasks/__init__.py
+    source: patches/src/core/tasks/__init__.py.append.txt
