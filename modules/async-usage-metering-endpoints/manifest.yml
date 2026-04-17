@@ -1,0 +1,10 @@
+name: async_usage_metering_endpoints
+description: Async template integration hooks for usage metering
+public: false
+
+compatible_templates:
+  - async_io_api
+
+requires_modules:
+  - usage_metering
+conflicts_with: []

@@ -10,34 +10,48 @@ from db.session import get_sessionmaker
 
 async def seed_from_env() -> None:
     """
-    Seed an initial user + API key based on environment variables.
+    Seed users and API keys from environment variables.
 
-    Designed to be idempotent: if the key already exists, it does nothing.
+    Supports:
+    - Multi-user: SEED_USER_IDS, SEED_USER_EMAILS, SEED_API_KEY_PLAINTEXTS      (comma-separated lists, same length; one user per index).
+    - Single-user (legacy): SEED_USER_ID, SEED_USER_EMAIL, SEED_API_KEY_PLAINTEXT.
+
+    Idempotent: skips creating a user that already exists by id, and skips
+    an API key row if that key_hash already exists.
     """
 
     settings = get_settings()
-    if not settings.SEED_API_KEY_PLAINTEXT:
+    if not settings.seed_users:
         return
-
-    key_hash = hash_api_key(settings.SEED_API_KEY_PLAINTEXT, salt=settings.API_KEY_SALT)
 
     sessionmaker = get_sessionmaker()
     async with sessionmaker() as session:
-        # Ensure user exists.
-        user_stmt = select(User).where(User.id == settings.SEED_USER_ID)
-        user_result = await session.execute(user_stmt)
-        user = user_result.scalars().first()
-        if user is None:
-            user = User(id=settings.SEED_USER_ID, email=settings.SEED_USER_EMAIL)
-            session.add(user)
+        for spec in settings.seed_users:
+            key_hash = hash_api_key(
+                spec.api_key_plaintext, salt=settings.API_KEY_SALT
+            )
 
-        # Ensure API key exists.
-        key_stmt = select(ApiKey).where(ApiKey.key_hash == key_hash)
-        key_result = await session.execute(key_stmt)
-        api_key = key_result.scalars().first()
-        if api_key is None:
-            api_key = ApiKey(user_id=user.id, key_hash=key_hash, label="seed")
-            session.add(api_key)
+            user_stmt = select(User).where(User.id == spec.user_id)
+            user_result = await session.execute(user_stmt)
+            user = user_result.scalars().first()
+            if user is None:
+                user = User(id=spec.user_id, email=spec.email)
+                session.add(user)
+            else:
+                # Keep email in sync if you changed env (optional hygiene).
+                if user.email != spec.email:
+                    user.email = spec.email
+
+            key_stmt = select(ApiKey).where(ApiKey.key_hash == key_hash)
+            key_result = await session.execute(key_stmt)
+            api_key = key_result.scalars().first()
+            if api_key is None:
+                session.add(
+                    ApiKey(
+                        user_id=user.id,
+                        key_hash=key_hash,
+                        label="seed",
+                    )
+                )
 
         await session.commit()
-

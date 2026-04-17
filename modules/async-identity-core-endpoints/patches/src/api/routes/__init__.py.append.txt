@@ -1,0 +1,2 @@
+from api.routes.protected_routes import router as protected_router
+router.include_router(protected_router)

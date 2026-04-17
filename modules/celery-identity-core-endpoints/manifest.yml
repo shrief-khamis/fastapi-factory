@@ -1,0 +1,21 @@
+name: celery_identity_core_endpoints
+description: Adds identity + job ownership protections for celery_job_api
+public: false
+
+compatible_templates:
+  - celery_job_api
+
+requires_modules:
+  - api_key_identity_core
+conflicts_with: []
+
+copy_files:
+  - source: files/src/core/job_registry_identity.py
+    destination: src/core/job_registry_identity.py
+  - source: files/src/api/routes/identity_routes.py
+    destination: src/api/routes/identity_routes.py
+
+patches:
+  - strategy: file_append
+    target: src/api/routes/__init__.py
+    source: patches/src/api/routes/__init__.py.append.txt

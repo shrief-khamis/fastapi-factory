@@ -39,7 +39,7 @@ def _load_manifest_file(path: Path) -> dict | None:
 
 
 def _discover_modules() -> dict[str, tuple[Path, dict]]:
-    """Return dict mapping manifest['name'] -> (module_dir, manifest_dict) for public modules only."""
+    """Return dict mapping manifest['name'] -> (module_dir, manifest_dict) for all modules."""
     result = {}
     base = modules_dir()
     if not base.is_dir():
@@ -51,7 +51,7 @@ def _discover_modules() -> dict[str, tuple[Path, dict]]:
         if not manifest_path.is_file():
             continue
         data = _load_manifest_file(manifest_path)
-        if data and "name" in data and data.get("public", False):
+        if data and "name" in data:
             result[data["name"]] = (entry, data)
     return result
 
@@ -60,6 +60,57 @@ def load_manifest(module_name: str) -> tuple[Path, dict] | None:
     """Load manifest for a module by name. Returns (module_dir, manifest) or None if not found."""
     modules = _discover_modules()
     return modules.get(module_name)
+
+
+def _resolve_modules_for_template(template: str, module_names: list[str]) -> tuple[list[str], str]:
+    """
+    Resolve a user-provided module list into a concrete, ordered module list.
+
+    Resolution includes:
+    - requires_modules (recursive)
+    - component_dependencies[template] (recursive)
+
+    Returns (resolved_names, error_message).
+    """
+    modules = _discover_modules()
+    resolved: list[str] = []
+    seen: set[str] = set()
+    visiting: set[str] = set()
+
+    def visit(name: str) -> str | None:
+        if name in seen:
+            return None
+        if name in visiting:
+            return f"Cyclic module dependency detected at '{name}'"
+        out = modules.get(name)
+        if not out:
+            return f"Unknown module: {name}"
+        _, manifest = out
+        visiting.add(name)
+
+        component_deps = (
+            manifest.get("component_dependencies", {}).get(template, []) or []
+        )
+        for dep in component_deps:
+            err = visit(dep)
+            if err:
+                return err
+
+        for req in manifest.get("requires_modules") or []:
+            err = visit(req)
+            if err:
+                return err
+
+        visiting.remove(name)
+        seen.add(name)
+        resolved.append(name)
+        return None
+
+    for name in module_names:
+        err = visit(name)
+        if err:
+            return [], err
+    return resolved, ""
 
 
 def check_compatibility(
@@ -71,18 +122,19 @@ def check_compatibility(
     Returns (ok, error_message). If ok is True, error_message is empty.
     """
     modules = _discover_modules()
-    for name in module_names:
+    resolved_names, err = _resolve_modules_for_template(template, module_names)
+    if err:
+        return False, err
+
+    for name in resolved_names:
         if name not in modules:
             return False, f"Unknown module: {name}"
         _, manifest = modules[name]
         compatible = manifest.get("compatible_templates") or []
         if template not in compatible:
             return False, f"Module '{name}' is not compatible with template '{template}'"
-        for req in manifest.get("requires_modules") or []:
-            if req not in module_names:
-                return False, f"Module '{name}' requires module '{req}'"
         for conflict in manifest.get("conflicts_with") or []:
-            if conflict in module_names:
+            if conflict in resolved_names:
                 return False, f"Module '{name}' conflicts with module '{conflict}'"
     return True, ""
 
@@ -208,7 +260,7 @@ def create_dirs(project_path: Path, module_names: list[str]) -> None:
 
 
 def copy_module_files(project_path: Path, module_names: list[str]) -> None:
-    """Copy module files into the generated project (skip if destination exists)."""
+    """Copy module files into the generated project."""
     for name in module_names:
         out = load_manifest(name)
         if not out:
@@ -221,7 +273,8 @@ def copy_module_files(project_path: Path, module_names: list[str]) -> None:
                 continue
             src = module_dir / src_rel
             dst = project_path / dst_rel
-            if dst.exists():
+            overwrite = bool(item.get("overwrite", False))
+            if dst.exists() and not overwrite:
                 continue
             dst.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(src, dst)
@@ -453,9 +506,12 @@ def apply_modules(project_path: Path, template: str, module_names: list[str]) ->
     """
     if not module_names:
         return
-    create_dirs(project_path, module_names)
-    copy_module_files(project_path, module_names)
-    apply_patches(project_path, module_names)
-    append_requirements(project_path, module_names)
-    append_env_vars(project_path, module_names)
-    print(f"Applied modules: {', '.join(module_names)}")
+    resolved_names, err = _resolve_modules_for_template(template, module_names)
+    if err:
+        raise ValueError(err)
+    create_dirs(project_path, resolved_names)
+    copy_module_files(project_path, resolved_names)
+    apply_patches(project_path, resolved_names)
+    append_requirements(project_path, resolved_names)
+    append_env_vars(project_path, resolved_names)
+    print(f"Applied modules: {', '.join(resolved_names)}")

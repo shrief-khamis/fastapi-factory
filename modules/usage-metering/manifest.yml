@@ -1,0 +1,27 @@
+name: usage_metering
+description: Adds DB schema primitives for usage event metering
+public: false
+
+compatible_templates:
+  - async_io_api
+  - celery_job_api
+
+requires_modules:
+  - api_key_identity_core
+conflicts_with: []
+
+create_dirs:
+  - src/db
+  - alembic/versions
+
+copy_files:
+  - source: files/src/db/usage_models.py
+    destination: src/db/usage_models.py
+  - source: files/alembic/versions/0001_initial.py
+    destination: alembic/versions/0001_initial.py
+    overwrite: true
+
+patches:
+  - strategy: file_append
+    target: src/db/models.py
+    source: patches/src/db/models.py.append.txt

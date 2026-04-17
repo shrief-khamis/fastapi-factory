@@ -1,0 +1,24 @@
+name: async_identity_core_endpoints
+description: Adds identity-protected endpoint(s) for async_io_api
+public: false
+
+compatible_templates:
+  - async_io_api
+
+requires_modules:
+  - api_key_identity_core
+conflicts_with: []
+
+copy_files:
+  - source: files/src/api/models/auth_models.py
+    destination: src/api/models/auth_models.py
+  - source: files/src/api/routes/protected_routes.py
+    destination: src/api/routes/protected_routes.py
+
+patches:
+  - strategy: file_append
+    target: src/api/models/__init__.py
+    source: patches/src/api/models/__init__.py.append.txt
+  - strategy: file_append
+    target: src/api/routes/__init__.py
+    source: patches/src/api/routes/__init__.py.append.txt

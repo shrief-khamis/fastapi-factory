@@ -1,0 +1,10 @@
+name: celery_usage_metering_endpoints
+description: Celery template integration hooks for usage metering
+public: false
+
+compatible_templates:
+  - celery_job_api
+
+requires_modules:
+  - usage_metering
+conflicts_with: []

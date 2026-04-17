@@ -1,0 +1,10 @@
+name: async_credit_billing_endpoints
+description: Async template integration hooks for credit billing
+public: false
+
+compatible_templates:
+  - async_io_api
+
+requires_modules:
+  - credit_billing
+conflicts_with: []

@@ -1,0 +1,18 @@
+name: usage_metering_auth
+description: Public usage metering bundle with template-specific integration modules
+public: true
+
+compatible_templates:
+  - async_io_api
+  - celery_job_api
+
+requires_modules: []
+conflicts_with: []
+
+component_dependencies:
+  async_io_api:
+    - usage_metering
+    - async_usage_metering_endpoints
+  celery_job_api:
+    - usage_metering
+    - celery_usage_metering_endpoints
