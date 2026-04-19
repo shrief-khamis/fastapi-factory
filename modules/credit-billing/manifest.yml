@@ -20,6 +20,8 @@ copy_files:
   - source: files/alembic/versions/0001_initial.py
     destination: alembic/versions/0001_initial.py
     overwrite: true
+  - source: files/alembic/versions/0004_seed_dev_credit_balances.py
+    destination: alembic/versions/0004_seed_dev_credit_balances.py
 
 patches:
   - strategy: file_append

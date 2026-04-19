@@ -21,16 +21,9 @@ dependencies:
       value: "postgresql+asyncpg://postgres:postgres@db:5432/myapi"
     - name: API_KEY_SALT
       value: "dev-api-key-salt"
-    - name: SEED_USER_ID
-      value: "00000000-0000-0000-0000-000000000001"
-    - name: SEED_USER_EMAIL
-      value: "seed@example.com"
-    - name: SEED_API_KEY_PLAINTEXT
-      value: "seed-api-key-plaintext"
 
 create_dirs:
   - src/db
-  - scripts
   - alembic/versions
 
 copy_files:
@@ -44,20 +37,18 @@ copy_files:
     destination: src/db/session.py
   - source: files/src/db/init_db.py
     destination: src/db/init_db.py
-  - source: files/src/db/seed.py
-    destination: src/db/seed.py
   - source: files/src/db/auth.py
     destination: src/db/auth.py
   - source: files/src/db/__init__.py
     destination: src/db/__init__.py
-  - source: files/scripts/seed_db.py
-    destination: scripts/seed_db.py
   - source: files/alembic.ini
     destination: alembic.ini
   - source: files/alembic/env.py
     destination: alembic/env.py
   - source: files/alembic/versions/0001_initial.py
     destination: alembic/versions/0001_initial.py
+  - source: files/alembic/versions/0002_seed_dev_identity_data.py
+    destination: alembic/versions/0002_seed_dev_identity_data.py
 
 patches:
   - strategy: marker_insert

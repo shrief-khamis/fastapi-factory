@@ -21,7 +21,7 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    command: sh -c "cd /app && alembic upgrade head && python scripts/seed_db.py"
+    command: sh -c "cd /app && alembic upgrade head"
 
   api:
     depends_on:
