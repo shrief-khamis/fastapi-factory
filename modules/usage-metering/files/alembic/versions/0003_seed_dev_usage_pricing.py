@@ -12,8 +12,10 @@ branch_labels = None
 depends_on = None
 
 _SEED_PRICING = [
-    {"endpoint_key": "async.protected_me", "usage_units": 1},
-    {"endpoint_key": "celery.identity.submit_job", "usage_units": 5},
+    {"endpoint_key": "async.metered_sleep", "usage_units": 1},
+    {"endpoint_key": "celery.metered_submit_job", "usage_units": 5},
+    {"endpoint_key": "celery.metered_job_status", "usage_units": 1},
+    {"endpoint_key": "celery.metered_job_result", "usage_units": 2},
 ]
 
 

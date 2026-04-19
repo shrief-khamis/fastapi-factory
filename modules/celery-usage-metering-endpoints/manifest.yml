@@ -6,5 +6,15 @@ compatible_templates:
   - celery_job_api
 
 requires_modules:
+  - celery_identity_core_endpoints
   - usage_metering
 conflicts_with: []
+
+copy_files:
+  - source: files/src/api/routes/usage_metering_routes.py
+    destination: src/api/routes/usage_metering_routes.py
+
+patches:
+  - strategy: file_append
+    target: src/api/routes/__init__.py
+    source: patches/src/api/routes/__init__.py.append.txt

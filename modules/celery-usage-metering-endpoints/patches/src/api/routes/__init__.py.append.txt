@@ -1,0 +1,2 @@
+from api.routes.usage_metering_routes import router as usage_metering_router
+router.include_router(usage_metering_router)

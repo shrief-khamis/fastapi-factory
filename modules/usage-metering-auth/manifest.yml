@@ -11,8 +11,10 @@ conflicts_with: []
 
 component_dependencies:
   async_io_api:
+    - async_identity_core_endpoints
     - usage_metering
     - async_usage_metering_endpoints
   celery_job_api:
+    - celery_identity_core_endpoints
     - usage_metering
     - celery_usage_metering_endpoints
