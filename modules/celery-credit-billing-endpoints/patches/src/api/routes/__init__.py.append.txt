@@ -1,0 +1,2 @@
+from api.routes.credit_billing_routes import router as credit_billing_router
+router.include_router(credit_billing_router)

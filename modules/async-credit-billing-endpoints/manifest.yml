@@ -6,5 +6,16 @@ compatible_templates:
   - async_io_api
 
 requires_modules:
+  - async_identity_core_endpoints
+  - usage_metering
   - credit_billing
 conflicts_with: []
+
+copy_files:
+  - source: files/src/api/routes/credit_billing_routes.py
+    destination: src/api/routes/credit_billing_routes.py
+
+patches:
+  - strategy: file_append
+    target: src/api/routes/__init__.py
+    source: patches/src/api/routes/__init__.py.append.txt
