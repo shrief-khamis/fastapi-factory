@@ -1,40 +1,38 @@
-# Webhook Receiver API (template)
+# Webhook Receiver API
 
-Simple FastAPI service that exposes a single `/webhook` endpoint to receive POST callbacks and hand them off to an engine for processing.
-For now, the engine just logs the received payload; you can replace it with your own logic.
+FastAPI service with a single inbound webhook endpoint. Payloads are passed to **`src/engine/processor.py`** — replace `process_webhook()` with your logic (the default just logs).
 
-## Run with Docker (recommended)
-
-From the generated project directory (this template copied there):
+## Quick run
 
 ```bash
 cp .env.example .env   # optional
 docker compose up --build
 ```
 
-The API will be available at `http://localhost:8001`.
+API: `http://localhost:8001` · OpenAPI docs: `http://localhost:8001/docs`
 
-## Local development (without Docker)
-
-From the project root, with a virtualenv active:
+Without Docker:
 
 ```bash
 pip install -r requirements.txt
-cp .env.example .env  # optional
-cd src
-uvicorn main:app --reload --port 8001
+cd src && uvicorn main:app --reload --port 8001
 ```
+
+## Add your code
+
+Implement **`src/engine/processor.py`** — `process_webhook(payload)` runs on each `POST /webhook`. Adjust validation or routing in `src/api/routes.py` if needed.
+
+## Optional modules
+
+This template does not support optional modules. It was generated as a standalone receiver. For outbound webhook delivery on job completion, use the `celery_job_api` template with the `webhook_sender` module instead.
+
+## Base endpoint
+
+- `POST /webhook` — accepts JSON, hands off to the engine
 
 ## Tests
 
-From the project root (venv active):
-
 ```bash
-cd src
-pytest -v
+pip install -r requirements.txt
+cd src && pytest -v
 ```
-
-## Endpoint
-
-- `POST /webhook` – accepts a JSON payload and passes it to the engine for processing.
-
