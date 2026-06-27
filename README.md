@@ -188,6 +188,25 @@ Celery and DB-backed projects need their backing services running (Redis, Postgr
 
 Add engine tests alongside the existing health/job tests in `src/tests/`.
 
+## Testing the factory
+
+The repo has its own pytest suite under `tests/` for the generator scripts (`scripts/new_project.py`, `scripts/module_registry.py`). It uses fake module fixtures in `tests/fixtures/modules/` for edge cases (dependency cycles, conflicts, patch strategies) and also smoke-tests real templates and modules.
+
+From the repo root (with the venv from [Quick start](#quick-start) active):
+
+```bash
+pytest -v
+```
+
+Run a single file or test:
+
+```bash
+pytest tests/test_module_registry.py -v
+pytest tests/test_new_project.py -v
+```
+
+Config lives in `pyproject.toml` at the repo root. This is separate from template tests inside generated projects (`src/tests/`).
+
 ## Dev API keys
 
 There is no admin UI or HTTP route to create users or issue API keys. For local development, `identity_auth` (and bundles that include it) seed two users via Alembic migration `0002_seed_dev_identity_data`:
@@ -208,11 +227,16 @@ fastapi-templates/
 ├── scripts/
 │   ├── new_project.py      # Generator CLI
 │   └── module_registry.py  # Module discovery, compatibility, patching
+├── tests/                  # Factory unit tests (pytest)
+│   ├── test_module_registry.py
+│   ├── test_new_project.py
+│   └── fixtures/modules/   # Fake manifests for isolated edge-case tests
 ├── templates/              # Base projects copied on generation
 │   ├── async_io_api/
 │   ├── celery_job_api/
 │   └── webhook_receiver/
-└── modules/                # Optional building blocks (manifest.yml each)
+├── modules/                # Optional building blocks (manifest.yml each)
+└── pyproject.toml          # Pytest config for factory tests
 ```
 
 ## Generator options

@@ -1,0 +1,8 @@
+name: cycle_b
+description: Cyclic dependency B
+compatible_templates:
+  - test_template
+
+requires_modules:
+  - cycle_a
+conflicts_with: []

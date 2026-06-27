@@ -1,0 +1,40 @@
+name: patch_module
+description: Module that exercises patch strategies
+compatible_templates:
+  - test_template
+
+requires_modules: []
+conflicts_with: []
+
+dependencies:
+  python_packages:
+    - httpx>=0.27.0
+    - sqlalchemy>=2.0.0
+  env_vars:
+    - name: PATCH_MODULE_VAR
+      value: "patch-value"
+
+create_dirs:
+  - src/extra
+
+copy_files:
+  - source: files/copied.txt
+    destination: copied.txt
+  - source: files/existing.txt
+    destination: existing.txt
+    overwrite: false
+  - source: files/overwrite.txt
+    destination: overwrite.txt
+    overwrite: true
+
+patches:
+  - strategy: file_append
+    target: src/api/routes/__init__.py
+    source: patches/routes.append.txt
+  - strategy: marker_insert
+    target: Dockerfile
+    marker: "# MODULE: extra-copies"
+    source: patches/dockerfile.insert.txt
+  - strategy: yml_merge
+    target: docker-compose.yml
+    source: patches/compose.fragment.yml

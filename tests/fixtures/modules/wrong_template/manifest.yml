@@ -1,0 +1,7 @@
+name: wrong_template
+description: Only compatible with other_template
+compatible_templates:
+  - other_template
+
+requires_modules: []
+conflicts_with: []

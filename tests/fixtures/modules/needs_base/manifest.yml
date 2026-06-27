@@ -1,0 +1,8 @@
+name: needs_base
+description: Requires base_only
+compatible_templates:
+  - test_template
+
+requires_modules:
+  - base_only
+conflicts_with: []

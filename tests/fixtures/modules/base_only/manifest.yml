@@ -1,0 +1,7 @@
+name: base_only
+description: Leaf module with no dependencies
+compatible_templates:
+  - test_template
+
+requires_modules: []
+conflicts_with: []

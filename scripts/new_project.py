@@ -18,7 +18,7 @@ def repo_root() -> Path:
     return _REPO_ROOT
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Copy a template to a new project directory.",
     )
@@ -43,7 +43,7 @@ def main() -> int:
         default="",
         help="Comma-separated optional module names (e.g. webhook_sender).",
     )
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     root = repo_root()
     templates_dir = root / "templates"

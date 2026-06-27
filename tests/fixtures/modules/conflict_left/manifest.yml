@@ -1,0 +1,8 @@
+name: conflict_left
+description: Conflicts with conflict_right
+compatible_templates:
+  - test_template
+
+requires_modules: []
+conflicts_with:
+  - conflict_right

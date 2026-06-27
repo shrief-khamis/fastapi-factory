@@ -1,0 +1,10 @@
+services:
+  db:
+    image: postgres:16
+  api:
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data: {}

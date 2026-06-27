@@ -1,0 +1,12 @@
+name: bundle_parent
+description: Pulls in component deps for a template
+compatible_templates:
+  - test_template
+
+requires_modules: []
+conflicts_with: []
+
+component_dependencies:
+  test_template:
+    - base_only
+    - needs_base
