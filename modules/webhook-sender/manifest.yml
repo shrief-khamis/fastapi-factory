@@ -24,6 +24,8 @@ copy_files:
     destination: src/api/routes/webhook_routes.py
   - source: files/src/core/tasks/webhook_tasks.py
     destination: src/core/tasks/webhook_tasks.py
+  - source: files/src/tests/test_webhook_routes.py
+    destination: src/tests/test_webhook_routes.py
 
 patches:
   - strategy: file_append

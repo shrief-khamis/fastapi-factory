@@ -177,16 +177,25 @@ Metered/billed/identity routes are examples of auth-wrapped endpoints — copy t
 
 ### Tests
 
-Each generated project has a minimal pytest setup under `src/tests/`. From the project root:
+Each template ships with a pytest setup under `src/tests/` (health checks, basic route flows, and engine hooks). Optional modules **add** more test files to the same directory when applied — for example `identity_auth` adds auth and protected-route tests; `credit_billing_auth` adds metering and billing unit/API tests. One command runs everything:
 
 ```bash
 pip install -r requirements.txt
 cd src && pytest -v
 ```
 
-Celery and DB-backed projects need their backing services running (Redis, Postgres) — easiest via `docker compose up`.
+Template READMEs use the same command; no need to run module tests separately.
 
-Add engine tests alongside the existing health/job tests in `src/tests/`.
+**What to expect by stack:**
+
+| Generated with | Tests use |
+|---|---|
+| Base template only | In-process HTTP tests (no DB) |
+| `identity_auth` or bundles that include it | SQLite via SQLAlchemy models (`conftest_db.py`) — not Alembic, not Postgres |
+| `celery_job_api` template tests (`test_jobs.py`) | Redis is **mocked** in tests (no real Redis required for core flows) |
+| `webhook_sender` module tests | Mocked Celery/Redis; no worker required |
+
+Add your engine tests alongside the existing files in `src/tests/`.
 
 ## Testing the factory
 

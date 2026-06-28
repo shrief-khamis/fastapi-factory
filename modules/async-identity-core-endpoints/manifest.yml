@@ -14,6 +14,8 @@ copy_files:
     destination: src/api/models/auth_models.py
   - source: files/src/api/routes/protected_routes.py
     destination: src/api/routes/protected_routes.py
+  - source: files/src/tests/test_protected_routes.py
+    destination: src/tests/test_protected_routes.py
 
 patches:
   - strategy: file_append

@@ -14,6 +14,8 @@ conflicts_with: []
 copy_files:
   - source: files/src/api/routes/credit_billing_routes.py
     destination: src/api/routes/credit_billing_routes.py
+  - source: files/src/tests/test_billed_routes.py
+    destination: src/tests/test_billed_routes.py
 
 patches:
   - strategy: file_append

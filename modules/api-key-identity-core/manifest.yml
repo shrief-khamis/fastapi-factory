@@ -16,6 +16,7 @@ dependencies:
     - asyncpg>=0.29.0
     - python-dotenv>=1.0.0
     - aiosqlite>=0.20.0
+    - greenlet>=3.0.0
   env_vars:
     - name: DATABASE_URL
       value: "postgresql+asyncpg://postgres:postgres@db:5432/myapi"
@@ -49,6 +50,13 @@ copy_files:
     destination: alembic/versions/0001_initial.py
   - source: files/alembic/versions/0002_seed_dev_identity_data.py
     destination: alembic/versions/0002_seed_dev_identity_data.py
+  - source: files/src/tests/conftest_db.py
+    destination: src/tests/conftest_db.py
+  - source: files/src/tests/conftest.py
+    destination: src/tests/conftest.py
+    overwrite: true
+  - source: files/src/tests/test_auth.py
+    destination: src/tests/test_auth.py
 
 patches:
   - strategy: marker_insert

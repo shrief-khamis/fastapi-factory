@@ -24,6 +24,10 @@ copy_files:
     overwrite: true
   - source: files/alembic/versions/0004_seed_dev_credit_balances.py
     destination: alembic/versions/0004_seed_dev_credit_balances.py
+  - source: files/src/tests/test_credit_billing.py
+    destination: src/tests/test_credit_billing.py
+  - source: files/src/tests/seed_credit.py
+    destination: src/tests/seed_credit.py
 
 patches:
   - strategy: file_append

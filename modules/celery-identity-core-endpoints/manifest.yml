@@ -14,6 +14,8 @@ copy_files:
     destination: src/core/job_registry_identity.py
   - source: files/src/api/routes/identity_routes.py
     destination: src/api/routes/identity_routes.py
+  - source: files/src/tests/test_identity_routes.py
+    destination: src/tests/test_identity_routes.py
 
 patches:
   - strategy: file_append

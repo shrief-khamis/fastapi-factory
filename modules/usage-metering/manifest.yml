@@ -24,6 +24,10 @@ copy_files:
     overwrite: true
   - source: files/alembic/versions/0003_seed_dev_usage_pricing.py
     destination: alembic/versions/0003_seed_dev_usage_pricing.py
+  - source: files/src/tests/test_usage_metering.py
+    destination: src/tests/test_usage_metering.py
+  - source: files/src/tests/seed_usage.py
+    destination: src/tests/seed_usage.py
 
 patches:
   - strategy: file_append
