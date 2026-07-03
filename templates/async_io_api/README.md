@@ -35,6 +35,10 @@ If you used `identity_auth` (or a bundle that includes it):
 - **User API keys** — dev users are seeded by Alembic (`alembic/versions/0002_seed_dev_identity_data.py`). Send the key in the `X-API-Key` header.
 - **Admin provisioning** — set `ADMIN_API_KEY` in `.env` and call `POST /admin/add-user` to onboard users, `POST /admin/rotate-key` to replace active keys, or `POST /admin/inspect-user` to list key metadata. Send `X-Admin-Key` on these requests. Admin routes are hidden from `/docs`.
 
+If you used `usage_metering_auth` (or `credit_billing_auth`):
+
+- **Endpoint pricing** — set `ADMIN_API_KEY` and call `POST /admin/upsert-endpoint-pricing` to create or update `usage_units` for an `endpoint_key`, or `POST /admin/list-endpoint-pricing` to list configured pricing. Metered routes only record usage when a pricing row exists.
+
 ## Base endpoints
 
 - `GET /health`

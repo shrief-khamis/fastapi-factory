@@ -68,7 +68,7 @@ Modules are optional building blocks applied on top of a template. Pass **public
 | Module | Compatible templates | What it adds |
 |---|---|---|
 | `identity_auth` | `async_io_api`, `celery_job_api` | Postgres, Alembic, API-key auth (`X-API-Key`), identity-protected routes, operator admin API (`ADMIN_API_KEY`, `/admin/*`) |
-| `usage_metering_auth` | `async_io_api`, `celery_job_api` | Everything in `identity_auth` + usage event recording for metered endpoints |
+| `usage_metering_auth` | `async_io_api`, `celery_job_api` | Everything in `identity_auth` + usage event recording for metered endpoints, admin endpoint pricing API |
 | `credit_billing_auth` | `async_io_api`, `celery_job_api` | Everything in `usage_metering_auth` + credit balances and per-request billing |
 | `webhook_sender` | `celery_job_api` | Submit jobs with a callback URL; Celery delivers results via HTTP POST |
 
@@ -99,6 +99,13 @@ Admin routes (both templates; hidden from OpenAPI; require `X-Admin-Key` header)
 |---|---|
 | `async_io_api` | `GET /metered/sleep` |
 | `celery_job_api` | `POST /metered/submit-job`, `GET /metered/job-status/{job_id}`, `GET /metered/job-results/{job_id}` |
+
+Additional admin routes (hidden from OpenAPI; require `X-Admin-Key` header):
+
+| Route | Purpose |
+|---|---|
+| `POST /admin/upsert-endpoint-pricing` | Create or update `usage_units` for an `endpoint_key`. |
+| `POST /admin/list-endpoint-pricing` | List all configured endpoint pricing rows. |
 
 **`credit_billing_auth`** (includes `usage_metering_auth`)
 
@@ -259,6 +266,26 @@ curl -X POST http://localhost:8000/admin/add-user \
 ```
 
 Use `/admin/rotate-key` to replace keys for an existing user; use `/admin/inspect-user` to audit key state without exposing plaintext.
+
+### Admin usage metering API
+
+Available when `usage_metering_auth` (or `credit_billing_auth`) is applied. Uses the same `ADMIN_API_KEY` / `X-Admin-Key` setup as the identity admin routes.
+
+| Route | Purpose |
+|---|---|
+| `POST /admin/upsert-endpoint-pricing` | Create or update pricing for an `endpoint_key` (`usage_units` must be > 0). |
+| `POST /admin/list-endpoint-pricing` | List all configured endpoint pricing rows. |
+
+Example — set pricing for a metered route:
+
+```bash
+curl -X POST http://localhost:8000/admin/upsert-endpoint-pricing \
+  -H "X-Admin-Key: $ADMIN_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"endpoint_key": "async.metered_sleep", "usage_units": 2}'
+```
+
+Metered routes only record usage when a pricing row exists for their hardcoded `endpoint_key`.
 
 ## Repo layout
 
