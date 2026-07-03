@@ -1,0 +1,2 @@
+from api.routes.credit_admin_routes import router as credit_admin_router
+router.include_router(credit_admin_router)

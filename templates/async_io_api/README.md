@@ -39,6 +39,10 @@ If you used `usage_metering_auth` (or `credit_billing_auth`):
 
 - **Endpoint pricing** — set `ADMIN_API_KEY` and call `POST /admin/upsert-endpoint-pricing` to create or update `usage_units` for an `endpoint_key`, or `POST /admin/list-endpoint-pricing` to list configured pricing. Metered routes only record usage when a pricing row exists.
 
+If you used `credit_billing_auth`:
+
+- **Credit balances** — set `ADMIN_API_KEY` and use `POST /admin/inspect-credit-balance`, `POST /admin/add-credit`, `POST /admin/deduct-credit` (omit `units` to deduct the full balance), or `POST /admin/list-top-credit-balances` to manage and inspect balances. Admin routes are hidden from `/docs`.
+
 ## Base endpoints
 
 - `GET /health`

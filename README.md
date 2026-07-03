@@ -69,7 +69,7 @@ Modules are optional building blocks applied on top of a template. Pass **public
 |---|---|---|
 | `identity_auth` | `async_io_api`, `celery_job_api` | Postgres, Alembic, API-key auth (`X-API-Key`), identity-protected routes, operator admin API (`ADMIN_API_KEY`, `/admin/*`) |
 | `usage_metering_auth` | `async_io_api`, `celery_job_api` | Everything in `identity_auth` + usage event recording for metered endpoints, admin endpoint pricing API |
-| `credit_billing_auth` | `async_io_api`, `celery_job_api` | Everything in `usage_metering_auth` + credit balances and per-request billing |
+| `credit_billing_auth` | `async_io_api`, `celery_job_api` | Everything in `usage_metering_auth` + credit balances, per-request billing, admin credit balance API |
 | `webhook_sender` | `celery_job_api` | Submit jobs with a callback URL; Celery delivers results via HTTP POST |
 
 `identity_auth`, `usage_metering_auth`, and `credit_billing_auth` are bundles — they pull in lower-level modules (`api_key_identity_core`, endpoint integrations, DB schema, etc.) in the correct order. You only need to name the bundle.
@@ -113,6 +113,15 @@ Additional admin routes (hidden from OpenAPI; require `X-Admin-Key` header):
 |---|---|
 | `async_io_api` | `GET /billed/sleep` (returns 402 if insufficient credits) |
 | `celery_job_api` | `POST /billed/submit-job`, `GET /billed/job-status/{job_id}`, `GET /billed/job-results/{job_id}` |
+
+Additional admin routes (hidden from OpenAPI; require `X-Admin-Key` header):
+
+| Route | Purpose |
+|---|---|
+| `POST /admin/inspect-credit-balance` | Get a user's current credit balance (`404` if user not found). |
+| `POST /admin/add-credit` | Add credits to a user's balance (`404` if user not found). |
+| `POST /admin/deduct-credit` | Deduct credits; omit `units` to deduct entire balance, or set `units` to deduct up to that amount (capped at current balance). |
+| `POST /admin/list-top-credit-balances` | List top users by credit balance (`limit` defaults to 10, max 100). |
 
 **`webhook_sender`**
 
@@ -286,6 +295,35 @@ curl -X POST http://localhost:8000/admin/upsert-endpoint-pricing \
 ```
 
 Metered routes only record usage when a pricing row exists for their hardcoded `endpoint_key`.
+
+### Admin credit billing API
+
+Available when `credit_billing_auth` is applied. Uses the same `ADMIN_API_KEY` / `X-Admin-Key` setup as the other admin routes.
+
+| Route | Purpose |
+|---|---|
+| `POST /admin/inspect-credit-balance` | Get a user's current credit balance (`404` if user not found). |
+| `POST /admin/add-credit` | Add credits to a user's balance (`404` if user not found). |
+| `POST /admin/deduct-credit` | Deduct credits; omit `units` to clear the balance, or set `units` to deduct up to that amount (capped at current balance). |
+| `POST /admin/list-top-credit-balances` | List top users by credit balance (`limit` defaults to 10, max 100). |
+
+Example — add credits for a user:
+
+```bash
+curl -X POST http://localhost:8000/admin/add-credit \
+  -H "X-Admin-Key: $ADMIN_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"email": "user@example.com", "units": 100}'
+```
+
+Example — deduct entire balance:
+
+```bash
+curl -X POST http://localhost:8000/admin/deduct-credit \
+  -H "X-Admin-Key: $ADMIN_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"email": "user@example.com"}'
+```
 
 ## Repo layout
 
