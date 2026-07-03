@@ -21,12 +21,17 @@ class Settings:
     # Salt used to hash API keys before storing them in the DB.
     API_KEY_SALT: str
 
+    # Operator key for /admin routes (X-Admin-Key header). Unset disables admin API.
+    ADMIN_API_KEY: str | None
+
 
 @lru_cache
 def get_settings() -> Settings:
+    admin_api_key = os.getenv("ADMIN_API_KEY")
     return Settings(
         DATABASE_URL=os.getenv(
             "DATABASE_URL", "postgresql+asyncpg://postgres:postgres@db:5432/myapi"
         ),
         API_KEY_SALT=os.getenv("API_KEY_SALT", "dev-api-key-salt"),
+        ADMIN_API_KEY=admin_api_key if admin_api_key else None,
     )

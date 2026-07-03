@@ -17,11 +17,14 @@ dependencies:
     - python-dotenv>=1.0.0
     - aiosqlite>=0.20.0
     - greenlet>=3.0.0
+    - email-validator>=2.0.0
   env_vars:
     - name: DATABASE_URL
       value: "postgresql+asyncpg://postgres:postgres@db:5432/myapi"
     - name: API_KEY_SALT
       value: "dev-api-key-salt"
+    - name: ADMIN_API_KEY
+      value: "change-me-to-a-strong-admin-secret"
 
 create_dirs:
   - src/db
@@ -40,8 +43,14 @@ copy_files:
     destination: src/db/init_db.py
   - source: files/src/db/auth.py
     destination: src/db/auth.py
+  - source: files/src/db/identity_admin.py
+    destination: src/db/identity_admin.py
   - source: files/src/db/__init__.py
     destination: src/db/__init__.py
+  - source: files/src/api/models/admin_models.py
+    destination: src/api/models/admin_models.py
+  - source: files/src/api/routes/admin_routes.py
+    destination: src/api/routes/admin_routes.py
   - source: files/alembic.ini
     destination: alembic.ini
   - source: files/alembic/env.py
@@ -57,8 +66,16 @@ copy_files:
     overwrite: true
   - source: files/src/tests/test_auth.py
     destination: src/tests/test_auth.py
+  - source: files/src/tests/test_admin_routes.py
+    destination: src/tests/test_admin_routes.py
 
 patches:
+  - strategy: file_append
+    target: src/api/routes/__init__.py
+    source: patches/src/api/routes/__init__.py.append.txt
+  - strategy: file_append
+    target: src/api/models/__init__.py
+    source: patches/src/api/models/__init__.py.append.txt
   - strategy: marker_insert
     target: Dockerfile
     marker: "# MODULE: extra-copies"

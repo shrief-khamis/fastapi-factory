@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import secrets
 from datetime import datetime, timezone
 
 from fastapi import Depends, Header, HTTPException
@@ -12,6 +13,11 @@ from db.models import ApiKey, User
 from db.session import get_session
 
 
+def generate_api_key() -> str:
+    """Return a new random API key (plaintext; store only the hash)."""
+    return secrets.token_urlsafe(32)
+
+
 def hash_api_key(api_key: str, *, salt: str) -> str:
     """
     Hash API keys before storing/looking them up.
@@ -21,6 +27,19 @@ def hash_api_key(api_key: str, *, salt: str) -> str:
 
     raw = f"{salt}:{api_key}".encode("utf-8")
     return hashlib.sha256(raw).hexdigest()
+
+
+async def require_admin_key(
+    admin_key: str | None = Header(default=None, alias="X-Admin-Key"),
+) -> None:
+    """Validate the operator key from X-Admin-Key (separate from user X-API-Key)."""
+    settings = get_settings()
+    if not settings.ADMIN_API_KEY:
+        raise HTTPException(status_code=503, detail="Admin API is not configured")
+    if not admin_key:
+        raise HTTPException(status_code=401, detail="Missing X-Admin-Key header")
+    if not secrets.compare_digest(admin_key, settings.ADMIN_API_KEY):
+        raise HTTPException(status_code=401, detail="Invalid admin API key")
 
 
 async def get_current_user(
@@ -53,4 +72,3 @@ async def get_current_user(
         raise HTTPException(status_code=401, detail="Invalid API key")
 
     return user
-

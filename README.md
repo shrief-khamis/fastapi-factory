@@ -67,7 +67,7 @@ Modules are optional building blocks applied on top of a template. Pass **public
 
 | Module | Compatible templates | What it adds |
 |---|---|---|
-| `identity_auth` | `async_io_api`, `celery_job_api` | Postgres, Alembic, API-key auth (`X-API-Key`), identity-protected routes |
+| `identity_auth` | `async_io_api`, `celery_job_api` | Postgres, Alembic, API-key auth (`X-API-Key`), identity-protected routes, operator admin API (`ADMIN_API_KEY`, `/admin/*`) |
 | `usage_metering_auth` | `async_io_api`, `celery_job_api` | Everything in `identity_auth` + usage event recording for metered endpoints |
 | `credit_billing_auth` | `async_io_api`, `celery_job_api` | Everything in `usage_metering_auth` + credit balances and per-request billing |
 | `webhook_sender` | `celery_job_api` | Submit jobs with a callback URL; Celery delivers results via HTTP POST |
@@ -84,6 +84,14 @@ DB-backed modules add a `db` Postgres service and a `migrate` one-shot container
 |---|---|
 | `async_io_api` | `GET /protected/me` |
 | `celery_job_api` | `POST /identity/submit-job`, `GET /identity/job-status/{job_id}`, `GET /identity/job-results/{job_id}` |
+
+Admin routes (both templates; hidden from OpenAPI; require `X-Admin-Key` header):
+
+| Route | Purpose |
+|---|---|
+| `POST /admin/add-user` | Create user and issue first API key (`409` if email exists). Optional `expires_at`. |
+| `POST /admin/rotate-key` | Revoke all active keys and issue one new key. Optional `expires_at`. |
+| `POST /admin/inspect-user` | List key metadata for a user (no plaintext keys). |
 
 **`usage_metering_auth`** (includes `identity_auth`)
 
@@ -216,9 +224,13 @@ pytest tests/test_new_project.py -v
 
 Config lives in `pyproject.toml` at the repo root. This is separate from template tests inside generated projects (`src/tests/`).
 
-## Dev API keys
+## Dev API keys and user provisioning
 
-There is no admin UI or HTTP route to create users or issue API keys. For local development, `identity_auth` (and bundles that include it) seed two users via Alembic migration `0002_seed_dev_identity_data`:
+`identity_auth` (and bundles that include it) provide two ways to get API keys for local development.
+
+### Seeded dev users
+
+Alembic migration `0002_seed_dev_identity_data` creates two users:
 
 | Email | API key (plaintext) |
 |---|---|
@@ -227,7 +239,26 @@ There is no admin UI or HTTP route to create users or issue API keys. For local 
 
 Send the key in the `X-API-Key` header. Keys are hashed with `API_KEY_SALT` from `.env` (default `dev-api-key-salt`).
 
-To add users outside the seed data, insert into `users` and `api_keys` manually (hash keys with the same logic as `src/db/auth.py`) or add your own provisioning script.
+### Admin identity API
+
+Set `ADMIN_API_KEY` in `.env` (the generator adds it to `.env.example`). Send it as the `X-Admin-Key` header on admin requests. If unset, admin routes return `503`. Routes are omitted from `/docs`.
+
+| Route | Purpose |
+|---|---|
+| `POST /admin/add-user` | Create user and issue first API key (`409` if email exists). Optional `expires_at`. |
+| `POST /admin/rotate-key` | Revoke all active keys and issue one new key. Optional `expires_at`. |
+| `POST /admin/inspect-user` | List key metadata for a user (no plaintext keys). |
+
+Example — create a user:
+
+```bash
+curl -X POST http://localhost:8000/admin/add-user \
+  -H "X-Admin-Key: $ADMIN_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"email": "user@example.com"}'
+```
+
+Use `/admin/rotate-key` to replace keys for an existing user; use `/admin/inspect-user` to audit key state without exposing plaintext.
 
 ## Repo layout
 

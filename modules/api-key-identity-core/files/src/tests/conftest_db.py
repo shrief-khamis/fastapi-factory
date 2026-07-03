@@ -9,6 +9,7 @@ from httpx import ASGITransport, AsyncClient
 TEST_USER_ID = "00000000-0000-0000-0000-000000000001"
 TEST_USER_EMAIL = "seed@example.com"
 TEST_API_KEY = "seed-api-key-plaintext"
+TEST_ADMIN_KEY = "test-admin-key-for-pytest"
 
 
 def _clear_db_caches() -> None:
@@ -36,6 +37,7 @@ def _configure_database_env(
     db_file = tmp_path / "test.db"
     monkeypatch.setenv("DATABASE_URL", f"sqlite+aiosqlite:///{db_file}")
     monkeypatch.setenv("API_KEY_SALT", "dev-api-key-salt")
+    monkeypatch.setenv("ADMIN_API_KEY", TEST_ADMIN_KEY)
     _clear_db_caches()
     _mock_redis_if_present(monkeypatch)
 
@@ -69,6 +71,11 @@ async def seed_identity(session) -> None:
 @pytest.fixture
 def auth_headers() -> dict[str, str]:
     return {"X-API-Key": TEST_API_KEY}
+
+
+@pytest.fixture
+def admin_headers() -> dict[str, str]:
+    return {"X-Admin-Key": TEST_ADMIN_KEY}
 
 
 @pytest.fixture

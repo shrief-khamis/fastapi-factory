@@ -24,6 +24,10 @@ async def test_protected_me_with_valid_api_key_returns_user(db_client, auth_head
     assert data["email"] == TEST_USER_EMAIL
 
 
+# This test uses the raw seed key value (not the auth_headers fixture)
+# to help diagnose whether a broken test is due to the authentication logic
+# or just a misconfigured fixture. Keeping both fixture-based and raw key tests
+# helps distinguish fixture bugs from real auth issues.
 async def test_protected_me_seed_key_string(db_client) -> None:
     response = await db_client.get(
         "/protected/me",

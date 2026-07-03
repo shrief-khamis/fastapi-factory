@@ -33,7 +33,10 @@ This project may have been generated with optional modules from [FastAPI Factory
 
 Supported modules for this template: `identity_auth`, `usage_metering_auth`, `credit_billing_auth`, `webhook_sender`.
 
-If you used `identity_auth` (or a bundle that includes it), dev API keys are seeded by Alembic — see `alembic/versions/0002_seed_dev_identity_data.py`. Send the key in the `X-API-Key` header.
+If you used `identity_auth` (or a bundle that includes it):
+
+- **User API keys** — dev users are seeded by Alembic (`alembic/versions/0002_seed_dev_identity_data.py`). Send the key in the `X-API-Key` header.
+- **Admin provisioning** — set `ADMIN_API_KEY` in `.env` and call `POST /admin/add-user` to onboard users, `POST /admin/rotate-key` to replace active keys, or `POST /admin/inspect-user` to list key metadata. Send `X-Admin-Key` on these requests. Admin routes are hidden from `/docs`.
 
 ## Base endpoints
 

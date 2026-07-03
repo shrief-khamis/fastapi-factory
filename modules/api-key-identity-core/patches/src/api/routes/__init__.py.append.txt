@@ -1,0 +1,2 @@
+from api.routes.admin_routes import router as admin_router
+router.include_router(admin_router)
